@@ -242,6 +242,23 @@ example(of: "challenges 2 使用Variable检查用户会话") {
         }
     }
 }
-
-
+let numbers = Observable<Int>.create { observer in
+    let start = getStartNumber()
+    observer.onNext(start)
+    observer.onNext(start+1)
+    observer.onNext(start+2)
+    observer.onCompleted()
+    return Disposables.create()
+}
+var start = 0
+func getStartNumber() -> Int {
+    start += 1
+    return start
+}
+numbers.subscribe(onNext: { el in print("element [\(el)]") }, onCompleted: {
+        print("-------------")
+})
+numbers.subscribe(onNext: { el in print("element [\(el)]") }, onCompleted: {
+    print("-------------")
+})
 
