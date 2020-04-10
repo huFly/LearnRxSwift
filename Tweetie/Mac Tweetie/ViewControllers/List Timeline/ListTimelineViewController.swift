@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,34 @@
  */
 
 import Foundation
+import Cocoa
 import RxSwift
+import RxCocoa
+import RealmSwift
+import RxRealm
+import Then
 
-let start = Date()
+class ListTimelineViewController: NSViewController {
+  private let bag = DisposeBag()
+  fileprivate var viewModel: ListTimelineViewModel!
+  fileprivate var navigator: Navigator!
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+  @IBOutlet var tableView: NSTableView!
+
+  static func createWith(navigator: Navigator, storyboard: NSStoryboard, viewModel: ListTimelineViewModel) -> ListTimelineViewController {
+    return storyboard.instantiateViewController(ofType: ListTimelineViewController.self).then { vc in
+      vc.navigator = navigator
+      vc.viewModel = viewModel
     }
-    return name
-  } else {
-    return "Unknown Thread"
   }
-}
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    bindUI()
+  }
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
+  func bindUI() {
+    //show tweets in table view
     
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
-  }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
   }
 }

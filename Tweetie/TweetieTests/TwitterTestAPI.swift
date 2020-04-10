@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,41 @@
  */
 
 import Foundation
+import XCTest
+import Accounts
+
 import RxSwift
+import RxCocoa
 
-let start = Date()
+@testable import Tweetie
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+class TwitterTestAPI: TwitterAPIProtocol {
+  static func reset() {
+    lastMethodCall = nil
+    objects = PublishSubject<[JSONObject]>()
+  }
+
+  static var objects = PublishSubject<[JSONObject]>()
+  static var lastMethodCall: String?
+
+  static func timeline(of username: String) -> (AccessToken, TimelineCursor) -> Observable<[JSONObject]> {
+    return { account, cursor in
+      lastMethodCall = #function
+      return objects.asObservable()
     }
-    return name
-  } else {
-    return "Unknown Thread"
   }
-}
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
-
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
+  static func timeline(of list: ListIdentifier) -> (AccessToken, TimelineCursor) -> Observable<[JSONObject]> {
+    return { account, cursor in
+      lastMethodCall = #function
+      return objects.asObservable()
+    }
   }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
+
+  static func members(of list: ListIdentifier) -> (AccessToken) -> Observable<[JSONObject]> {
+    return { list in
+      lastMethodCall = #function
+      return objects.asObservable()
+    }
   }
 }

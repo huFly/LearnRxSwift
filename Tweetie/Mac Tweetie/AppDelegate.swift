@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,26 @@
  * THE SOFTWARE.
  */
 
-import Foundation
-import RxSwift
+import Cocoa
+import Accounts
 
-let start = Date()
+@NSApplicationMain
+class AppDelegate: NSObject, NSApplicationDelegate {
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+  let navigator = Navigator()
+
+  func applicationDidFinishLaunching(_ aNotification: Notification) {
+    guard let splitController = NSApp.windows.first?.contentViewController as? NSSplitViewController else {
+      fatalError("Can't find content controller")
     }
-    return name
-  } else {
-    return "Unknown Thread"
-  }
-}
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+    TwitterAccount.set(key: "placeholder",
+                       secret: "placeholder")
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
-  }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
+    let account = TwitterAccount().default
+    let list = (username: "icanzilb", slug: "RxSwift")
+
+    navigator.show(segue: .listPeople(account, list), sender: splitController)
+    navigator.show(segue: .listTimeline(account, list), sender: splitController)
   }
 }

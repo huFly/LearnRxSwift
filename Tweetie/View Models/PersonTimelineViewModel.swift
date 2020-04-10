@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,26 @@
  */
 
 import Foundation
+
 import RxSwift
+import RxCocoa
 
-let start = Date()
+class PersonTimelineViewModel {
+  private let fetcher: TimelineFetcher
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
-    }
-    return name
-  } else {
-    return "Unknown Thread"
-  }
-}
+  let username: String
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+  // MARK: - Input
+  let account: Driver<TwitterAccount.AccountStatus>
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
-  }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
+  // MARK: - Output
+  public var tweets: Driver<[Tweet]>!
+
+  // MARK: - Init
+  init(account: Driver<TwitterAccount.AccountStatus>, username: String, apiType: TwitterAPIProtocol.Type = TwitterAPI.self) {
+    self.account = account
+    self.username = username
+
+    fetcher = TimelineFetcher(account: account, username: username, apiType: apiType)
   }
 }
