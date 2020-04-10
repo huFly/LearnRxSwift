@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,28 @@
  */
 
 import Foundation
-import RxSwift
 
-let start = Date()
+#if os(iOS)
+  import UIKit
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+  extension UIStoryboard {
+    func instantiateViewController<T>(ofType type: T.Type) -> T {
+      return instantiateViewController(withIdentifier: String(describing: type)) as! T
     }
-    return name
-  } else {
-    return "Unknown Thread"
   }
-}
+#elseif os(OSX)
+  import Cocoa
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+  extension NSStoryboard.Name: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+      self.init(value)
+    }
+  }
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
+  extension NSStoryboard {
+    func instantiateViewController<T>(ofType type: T.Type) -> T {
+      let scene = SceneIdentifier(String(describing: type))
+      return instantiateController(withIdentifier: scene) as! T
+    }
   }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
-  }
-}
+#endif

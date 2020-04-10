@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,28 @@
  * THE SOFTWARE.
  */
 
-import Foundation
-import RxSwift
+import UIKit
+import Alamofire
 
-let start = Date()
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+  var window: UIWindow?
+  let navigator = Navigator()
+
+  let account = TwitterAccount().default
+  let list = (username: "icanzilb", slug: "RxSwift")
+  let testing = NSClassFromString("XCTest") != nil
+
+  func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    TwitterAccount.set(key: "placeholder",
+                       secret: "placeholder")
+
+    if !testing {
+      let feedNavigation = window!.rootViewController! as! UINavigationController
+      navigator.show(segue: .listTimeline(account, list), sender: feedNavigation)
     }
-    return name
-  } else {
-    return "Unknown Thread"
+    return true
   }
 }
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
-
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
-  }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
-  }
-}

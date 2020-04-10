@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,33 @@
  */
 
 import Foundation
-import RxSwift
+import RealmSwift
+import Unbox
 
-let start = Date()
+class User: Object, Unboxable {
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
-    }
-    return name
-  } else {
-    return "Unknown Thread"
+  // MARK: - Properties
+  @objc dynamic var id: Int64 = 0
+  @objc dynamic var name = ""
+  @objc dynamic var username = ""
+  @objc dynamic var about = ""
+  @objc dynamic var url = ""
+  @objc dynamic var imageUrl = ""
+
+  // MARK: - Meta
+  override static func primaryKey() -> String? {
+    return "id"
   }
-}
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+  // MARK: Init with Unboxer
+  convenience required init(unboxer: Unboxer) throws {
+    self.init()
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
-  }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
+    id = try unboxer.unbox(key: "id")
+    name = try unboxer.unbox(key: "name")
+    username = try unboxer.unbox(key: "screen_name")
+    about = try unboxer.unbox(key: "description")
+    url = try unboxer.unbox(key: "url")
+    imageUrl = try unboxer.unbox(key: "profile_image_url_https")
   }
 }

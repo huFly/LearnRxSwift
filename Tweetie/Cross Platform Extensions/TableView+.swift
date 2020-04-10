@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Razeware LLC
+ * Copyright (c) 2016-2017 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,24 @@
  */
 
 import Foundation
-import RxSwift
 
-let start = Date()
+#if os(iOS)
+  import UIKit
 
-fileprivate func getThreadName() -> String {
-  if Thread.current.isMainThread {
-    return "Main Thread"
-  } else if let name = Thread.current.name {
-    if name == "" {
-      return "Anonymous Thread"
+  extension UITableView {
+    func dequeueCell<T>(ofType type: T.Type) -> T {
+      return dequeueReusableCell(withIdentifier: String(describing: T.self)) as! T
     }
-    return name
-  } else {
-    return "Unknown Thread"
   }
-}
 
-fileprivate func secondsElapsed() -> String {
-  return String(format: "%02i", Int(Date().timeIntervalSince(start).rounded()))
-}
+#elseif os(OSX)
+  import Cocoa
 
-extension ObservableType {
-  func dump() -> RxSwift.Observable<Self.E> {
-    
-    return self.do(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [D] \(element) received on \(threadName)")
-    })
+  extension NSTableView {
+    func dequeueCell<T>(ofType type: T.Type) -> T {
+      let id = NSUserInterfaceItemIdentifier(String(describing: T.self))
+      return makeView(withIdentifier: id, owner: self) as! T
+    }
   }
-  
-  func dumpingSubscription() -> Disposable {
-    return self.subscribe(onNext: { element in
-      let threadName = getThreadName()
-      print("\(secondsElapsed())s | [S] \(element) received on \(threadName)")
-    })
-  }
-}
+
+#endif

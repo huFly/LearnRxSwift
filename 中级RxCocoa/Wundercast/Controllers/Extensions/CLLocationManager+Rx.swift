@@ -46,6 +46,7 @@ class RxCLLocationManagerDelegateProxy: DelegateProxy<CLLocationManager, CLLocat
 //通过 扩展 Reactive 可以将扩展之内的 方法 暴露在 CLLocationManager 的 rx 命名空间下
 extension Reactive where Base: CLLocationManager {
   public var delegate: DelegateProxy<CLLocationManager, CLLocationManagerDelegate> {
+    
     return RxCLLocationManagerDelegateProxy.proxy(for: base)
   }
   // delegate 将监听 CLLocationManagerDelegate.locationManager
