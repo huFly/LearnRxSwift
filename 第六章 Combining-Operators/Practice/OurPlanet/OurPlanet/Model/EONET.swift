@@ -121,7 +121,8 @@ class EONET {
          如果，某一个 Observable 发出一个 onError 事件，那么被合并的 Observable 也会将它发出，并且立即终止序列。
          通过 reduce 函数 将结果结合起来 并最终返回 Observable<EOEvent>
         **/
-        
+    // reduce 持续的将 Observable 的每一个元素应用一个函数，然后发出<最终!>结果
+    
         return Observable.of(openEvents, closedEvent).merge().reduce([]) { running, new in
             running + new
         }

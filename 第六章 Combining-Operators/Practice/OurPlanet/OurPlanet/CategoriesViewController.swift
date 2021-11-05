@@ -31,15 +31,10 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
     let categories = Variable<[EOCategory]>([])
     let disposeBag = DisposeBag()
     let activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .white)
-    
+    let download = DownloadView()
   override func viewDidLoad() {
     super.viewDidLoad()
-    
-    
     navigationItem.rightBarButtonItem = UIBarButtonItem(customView: activityIndicator)
-    
-    
-    
     categories.asObservable().subscribe(onNext:{ [weak self] _ in
         DispatchQueue.main.async {
             self?.tableView.reloadData()
@@ -47,6 +42,9 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
     })
     .disposed(by: disposeBag)
     
+    view.addSubview(download)
+    view.layoutIfNeeded()
+    print(download.frame)
     
     startDownload()
   }
@@ -56,6 +54,10 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
   
   
   func startDownload() {
+    
+    download.progress.progress = 0.0
+    download.label.text = "Download: 0%"
+    
     /***
      首先 下载 categories 并显示 然后 下载过去一年的events
     ***/
@@ -65,18 +67,8 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
       return Observable.from(categories.map { category in
         EONET.events(forLast: 360, category: category)
       })
-      }.merge(maxConcurrent: 2)
-    
-    downloadedEvents.subscribe( onError: { [weak self] _ in
-      DispatchQueue.main.async {
-        self?.activityIndicator.stopAnimating()
-      }
-    }, onCompleted: { [weak self] in
-      DispatchQueue.main.async {
-        self?.activityIndicator.stopAnimating()
-      }
-      
-    }).disposed(by: disposeBag)
+      }.merge(maxConcurrent: 1)
+
     
     
     
@@ -96,13 +88,16 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
     
     /**
      scan 操作符将对第一个元素应用一个函数，将结果作为第一个元素发出。然后，将结果作为参数填入到第二个元素的应用函数中，创建第二个元素。以此类推，直到遍历完全部的元素。
+     持续的将 Observable 的每一个元素应用一个函数，然后发出<每一次!>函数返回的结果(与reduce类似 但reduce是发出最终的结果)
      
+
      这种操作符在其他地方有时候被称作是 accumulator。
     **/
     // 目的是更新 Categorie 因为每个Category下载下来的 events observable 通过merge() 是无序发射的 所以每次收到 downloadedEvents 所发出的事件 进行scan 通过 accumulator整合 categories
     let updateCategories = eoCategories.flatMap { categories in
       //对所下载下来的 events 进行 scan 返回 [EOCategory]
       downloadedEvents.scan(categories) {updated, events in
+        print(events)
         return updated.map {category in
           let eventsForCategory = EONET.filteredEvents(events: events, forCategory: category)//过滤出最新的event
           if !eventsForCategory.isEmpty {
@@ -114,7 +109,30 @@ class CategoriesViewController: UIViewController, UITableViewDataSource, UITable
         }
       }
     }
-
+        //使用do 直接监听onCompleted事件
+    .do(onCompleted: { [weak self] in
+      DispatchQueue.main.async {
+        self?.activityIndicator.stopAnimating()
+        self?.download.isHidden = true
+      }
+    })
+    
+    eoCategories.flatMap { categories in
+      return updateCategories.scan(0){ count, _ in
+          return count + 1
+      }.startWith(0)
+        .map {($0, categories.count)}
+      }.subscribe(onNext: { tuple in
+        DispatchQueue.main.async { [weak self] in
+          let progress = Float(tuple.0) / Float(tuple.1)
+          self?.download.progress.progress = progress
+          let percent = Int(progress * 100.0)
+          self?.download.label.text = "Download: \(percent)%"
+        }
+      }).disposed(by: disposeBag)
+    
+    
+    
     eoCategories.concat(updateCategories).bind(to: categories).disposed(by: disposeBag)
 
   }
